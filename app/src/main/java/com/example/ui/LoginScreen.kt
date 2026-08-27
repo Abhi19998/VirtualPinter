@@ -144,7 +144,7 @@ fun LoginScreen(
                     modifier = Modifier
                         .widthIn(max = maxWidth)
                         .fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 ) {
@@ -156,12 +156,13 @@ fun LoginScreen(
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(20.dp))
                                 .clickable {
                                     authMode = AuthMode.SIGN_IN
                                     errorMessage = null
                                     hasAttemptedSubmit = false
                                 },
+                            shape = RoundedCornerShape(20.dp),
                             color = if (authMode == AuthMode.SIGN_IN)
                                 MaterialTheme.colorScheme.surface
                             else
@@ -187,12 +188,13 @@ fun LoginScreen(
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(20.dp))
                                 .clickable {
                                     authMode = AuthMode.SIGN_UP
                                     errorMessage = null
                                     hasAttemptedSubmit = false
                                 },
+                            shape = RoundedCornerShape(20.dp),
                             color = if (authMode == AuthMode.SIGN_UP)
                                 MaterialTheme.colorScheme.surface
                             else
@@ -647,6 +649,26 @@ fun LoginScreen(
                                     text = if (authMode == AuthMode.SIGN_IN) "Sign In" else "Create Account",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        if (onBack != null) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            OutlinedButton(
+                                onClick = onBack,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(46.dp)
+                                    .testTag("skip_to_dashboard_button"),
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                            ) {
+                                Text(
+                                    text = "Back",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }

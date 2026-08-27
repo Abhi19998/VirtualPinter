@@ -72,6 +72,7 @@ import com.example.ui.components.LivePrinterRadarWave
 import com.example.ui.components.AnimatedCheckmarkCelebration
 import com.example.ui.components.AnimatedSaveSuccessBanner
 import com.example.ui.components.PdfSaveSuccessDialog
+import com.example.ui.components.UserProfileDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,6 +100,8 @@ fun PrinterDashboardScreen(
     val userName by viewModel.userName.collectAsState()
     val isPro by viewModel.isPro.collectAsState()
     val appTitle by viewModel.appTitle.collectAsState()
+    val currentThemeMode by viewModel.themeMode.collectAsState()
+    val simulatedLoad by viewModel.simulatedLoad.collectAsState()
     val receivedPrintsCount by viewModel.receivedPrintsCount.collectAsState()
     val conversionsCount by viewModel.conversionsCount.collectAsState()
     val proActivationKey by viewModel.proActivationKey.collectAsState()
@@ -112,7 +115,7 @@ fun PrinterDashboardScreen(
         }
     }
     var showHelpDialog by remember { mutableStateOf(false) }
-    var showUserMenu by remember { mutableStateOf(false) }
+    var showUserProfileDialog by remember { mutableStateOf(false) }
     var jobToDelete by remember { mutableStateOf<PrintJobEntity?>(null) }
     var showClearAllConfirmDialog by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -172,14 +175,14 @@ fun PrinterDashboardScreen(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
-                                    text = appTitle,
-                                    fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.titleMedium
+                                    text = "Virtual Printer",
+                                    fontWeight = FontWeight.Black,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    letterSpacing = 0.5.sp,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                                 if (isPro) {
                                     ProBadge(isSmall = true)
-                                } else {
-                                    FreePlanBadge(onClickUpgrade = { showProDialog = true })
                                 }
                             }
                             Text(
@@ -191,30 +194,22 @@ fun PrinterDashboardScreen(
                     }
                 },
                 actions = {
-                    FilledTonalButton(
-                        onClick = onNavigateToWebShare,
-                        modifier = Modifier
-                            .testTag("web_share_top_button")
-                            .padding(end = 4.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        )
+                    // Theme Toggle (Obsidian Dark Studio <-> Nordic Minimalist)
+                    IconButton(
+                        onClick = {
+                            viewModel.toggleTheme()
+                            val newThemeName = if (currentThemeMode == com.example.ui.theme.AppThemeMode.OBSIDIAN_DARK) "Nordic Minimalist (Light)" else "Obsidian Dark Studio (OLED)"
+                            Toast.makeText(context, "Theme: $newThemeName", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.testTag("theme_toggle_button")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CloudSync,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Web Share",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
+                            imageVector = if (currentThemeMode == com.example.ui.theme.AppThemeMode.OBSIDIAN_DARK) Icons.Default.DarkMode else Icons.Default.LightMode,
+                            contentDescription = "Switch Theme (Obsidian Dark / Nordic Light)",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
+
                     IconButton(
                         onClick = {
                             viewModel.refreshNetworkInfo()
@@ -237,122 +232,35 @@ fun PrinterDashboardScreen(
                         )
                     }
 
-                    // Account / Login Menu
-                    Box {
-                        IconButton(
-                            onClick = {
-                                if (isLoggedIn) {
-                                    showUserMenu = true
-                                } else {
-                                    onNavigateToLogin()
+                    // Account / Profile Button
+                    IconButton(
+                        onClick = {
+                            showUserProfileDialog = true
+                        },
+                        modifier = Modifier.testTag("account_menu_button")
+                    ) {
+                        if (isLoggedIn) {
+                            Surface(
+                                modifier = Modifier.size(32.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                border = BorderStroke(1.5.dp, if (isPro) Color(0xFFFFD700) else MaterialTheme.colorScheme.primary)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = userName?.firstOrNull()?.uppercase() ?: userEmail?.firstOrNull()?.uppercase() ?: "U",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
                                 }
-                            },
-                            modifier = Modifier.testTag("account_menu_button")
-                        ) {
-                            if (isLoggedIn) {
-                                Surface(
-                                    modifier = Modifier.size(30.dp),
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = userName?.firstOrNull()?.uppercase() ?: "U",
-                                            fontWeight = FontWeight.Bold,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-                                }
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.AccountCircle,
-                                    contentDescription = "Sign In / Account",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
                             }
-                        }
-
-                        DropdownMenu(
-                            expanded = showUserMenu,
-                            onDismissRequest = { showUserMenu = false }
-                        ) {
-                            if (isLoggedIn) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text(
-                                                text = userName ?: "User",
-                                                fontWeight = FontWeight.Bold,
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                            Text(
-                                                text = userEmail ?: "",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    },
-                                    onClick = {},
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Person, contentDescription = null)
-                                    }
-                                )
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Text(if (isPro) "PRO Account Active" else "Activate PRO License")
-                                            if (isPro) ProBadge(isSmall = true)
-                                        }
-                                    },
-                                    onClick = {
-                                        showUserMenu = false
-                                        showProDialog = true
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.WorkspacePremium,
-                                            contentDescription = null,
-                                            tint = if (isPro) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Set / Change MPIN") },
-                                    onClick = {
-                                        showUserMenu = false
-                                        viewModel.navigateToScreen(5)
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Pin, contentDescription = null)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Switch Account") },
-                                    onClick = {
-                                        showUserMenu = false
-                                        onNavigateToLogin()
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.SwitchAccount, contentDescription = null)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Sign Out", color = MaterialTheme.colorScheme.error) },
-                                    onClick = {
-                                        showUserMenu = false
-                                        viewModel.signOut()
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Logout, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                                    }
-                                )
-                            }
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "User Profile & Account",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 },
@@ -404,6 +312,9 @@ fun PrinterDashboardScreen(
                     port = networkInfo.port,
                     connectionType = networkInfo.connectionType,
                     isConnected = networkInfo.isConnected,
+                    simulatedLoad = simulatedLoad,
+                    accentWeight = 90,
+                    cornerRadius = 6,
                     onCopyIp = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         val clip = ClipData.newPlainText("Printer IP", networkInfo.ipAddress)
@@ -590,6 +501,38 @@ fun PrinterDashboardScreen(
         )
     }
 
+    if (showUserProfileDialog) {
+        UserProfileDialog(
+            isLoggedIn = isLoggedIn,
+            userName = userName,
+            userEmail = userEmail,
+            isPro = isPro,
+            proKey = proActivationKey,
+            printsCount = receivedPrintsCount,
+            conversionsCount = conversionsCount,
+            isMpinSet = viewModel.securityAuthManager.isMpinSet(),
+            isBiometricEnabled = viewModel.securityAuthManager.isBiometricEnabled(),
+            onDismiss = { showUserProfileDialog = false },
+            onNavigateToLogin = {
+                showUserProfileDialog = false
+                onNavigateToLogin()
+            },
+            onOpenProDialog = {
+                showUserProfileDialog = false
+                showProDialog = true
+            },
+            onOpenMpinSetup = {
+                showUserProfileDialog = false
+                viewModel.navigateToScreen(5)
+            },
+            onSignOut = {
+                showUserProfileDialog = false
+                viewModel.signOut()
+                Toast.makeText(context, "Signed out successfully", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
     savedJobForCelebration?.let { job ->
         PdfSaveSuccessDialog(
             fileName = job.fileName,
@@ -617,6 +560,9 @@ fun IpAddressCard(
     port: Int,
     connectionType: String,
     isConnected: Boolean,
+    simulatedLoad: Int = 24,
+    accentWeight: Int = 90,
+    cornerRadius: Int = 16,
     onCopyIp: () -> Unit,
     onShowGuide: () -> Unit,
     onOpenWebShare: () -> Unit
@@ -625,14 +571,15 @@ fun IpAddressCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("ip_address_card"),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(18.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -641,11 +588,12 @@ fun IpAddressCard(
             ) {
                 // Connection badge with animated radar wave
                 Surface(
-                    color = if (isConnected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(10.dp)
+                    color = if (isConnected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.errorContainer,
+                    shape = CircleShape,
+                    border = BorderStroke(1.dp, if (isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -660,23 +608,23 @@ fun IpAddressCard(
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(if (isConnected) Color(0xFF16A34A) else MaterialTheme.colorScheme.error)
+                                    .background(if (isConnected) Color(0xFF00E676) else MaterialTheme.colorScheme.error)
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = connectionType,
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isConnected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
                 }
 
                 FilledTonalButton(
                     onClick = onShowGuide,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(10.dp)
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    shape = CircleShape
                 ) {
                     Icon(
                         imageVector = Icons.Default.HelpOutline,
@@ -704,21 +652,21 @@ fun IpAddressCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Highlighted IP Card with Gradient Accent
+            // Highlighted IP Card with High-Contrast Round Accent
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp)),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                border = androidx.compose.foundation.BorderStroke(
+                    .clip(RoundedCornerShape(12.dp)),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                border = BorderStroke(
                     1.dp,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 )
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -730,33 +678,35 @@ fun IpAddressCard(
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
                             ) {
                                 Text(
                                     text = "RAW Port: $port",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                 )
                             }
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFF8B5CF6).copy(alpha = 0.12f)
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f))
                             ) {
                                 Text(
                                     text = "Web: :8080",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF7C3AED),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                 )
                             }
                         }
@@ -765,12 +715,12 @@ fun IpAddressCard(
                     FilledIconButton(
                         onClick = onCopyIp,
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(42.dp)
                             .testTag("copy_ip_button"),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = CircleShape,
                         colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(
@@ -799,13 +749,14 @@ fun PrinterControlCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("printer_control_card"),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -826,53 +777,55 @@ fun PrinterControlCard(
                     Text(
                         text = if (isRunning) "PRINTER SERVER ACTIVE" else "PRINTER SERVER STOPPED",
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isRunning) Color(0xFF16A34A) else MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (isRunning) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 ) {
                     Text(
                         text = statusText,
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Main Start / Stop Button
+            // Main Start / Stop Button with Round Corners
             Button(
                 onClick = onToggleServer,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
+                    .height(50.dp)
                     .testTag("toggle_server_button"),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    contentColor = if (isRunning) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Icon(
                     imageVector = if (isRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(22.dp)
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (isRunning) "Stop Virtual Printer Server" else "Start Virtual Printer Server",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Secondary Action Row: Test Print & Android Print Settings
             Row(
@@ -885,7 +838,8 @@ fun PrinterControlCard(
                         .weight(1f)
                         .testTag("test_print_button"),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = !isSimulating
+                    enabled = !isSimulating,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     if (isSimulating) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
@@ -909,7 +863,8 @@ fun PrinterControlCard(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("system_print_settings_button"),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -972,11 +927,12 @@ fun WebShareDashboardBannerCard(
         onClick = onOpenWebShare,
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(50.dp)
             .testTag("open_web_share_hub_button"),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondary
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary
         )
     ) {
         Icon(
@@ -986,9 +942,9 @@ fun WebShareDashboardBannerCard(
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Web Share",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            text = "Web Share Hub & File Transfer",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.ExtraBold
         )
     }
 }
@@ -1013,7 +969,8 @@ fun ReceivedJobsBoxHeader(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-        )
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -1077,11 +1034,12 @@ fun ReceivedJobsBoxHeader(
 
             // Dedicated Folder Path Badge with "Select Folder" Action
             Surface(
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .clickable { onSelectFolder() }
                     .testTag("select_folder_banner")
             ) {
@@ -1118,12 +1076,12 @@ fun ReceivedJobsBoxHeader(
                     }
 
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
+                        shape = CircleShape,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                         modifier = Modifier.clickable { onSelectFolder() }
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -1212,8 +1170,9 @@ fun PrintJobCard(
                     onClick = { onPreview() },
                     onLongClick = { showMenu = true }
                 ),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Row(
@@ -1225,8 +1184,8 @@ fun PrintJobCard(
                 // File Format Badge Icon
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(badgeBg),
                     contentAlignment = Alignment.Center
                 ) {
@@ -1234,7 +1193,7 @@ fun PrintJobCard(
                         imageVector = formatIcon,
                         contentDescription = if (hasPdf) "PDF Available" else "PostScript",
                         tint = badgeFg,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
@@ -1257,7 +1216,7 @@ fun PrintJobCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Surface(
-                            shape = RoundedCornerShape(6.dp),
+                            shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         ) {
                             Text(
@@ -1265,7 +1224,7 @@ fun PrintJobCard(
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
                     }

@@ -118,12 +118,48 @@ class PrinterViewModel(application: Application) : AndroidViewModel(application)
         .map { if (it) "Virtual PDF Printer PRO" else "Virtual PDF Printer" }
         .stateIn(viewModelScope, SharingStarted.Eagerly, if (proLicenseManager.isUserPro()) "Virtual PDF Printer PRO" else "Virtual PDF Printer")
 
+    private val _themeMode = MutableStateFlow(
+        try {
+            val prefs = application.getSharedPreferences("app_settings_theme", android.content.Context.MODE_PRIVATE)
+            val savedTheme = prefs.getString("theme_mode", com.example.ui.theme.AppThemeMode.OBSIDIAN_DARK.name)
+            com.example.ui.theme.AppThemeMode.valueOf(savedTheme ?: com.example.ui.theme.AppThemeMode.OBSIDIAN_DARK.name)
+        } catch (e: Exception) {
+            com.example.ui.theme.AppThemeMode.OBSIDIAN_DARK
+        }
+    )
+    val themeMode: StateFlow<com.example.ui.theme.AppThemeMode> = _themeMode.asStateFlow()
+
+    fun toggleTheme() {
+        val next = if (_themeMode.value == com.example.ui.theme.AppThemeMode.OBSIDIAN_DARK) {
+            com.example.ui.theme.AppThemeMode.NORDIC_LIGHT
+        } else {
+            com.example.ui.theme.AppThemeMode.OBSIDIAN_DARK
+        }
+        setThemeMode(next)
+    }
+
+    fun setThemeMode(mode: com.example.ui.theme.AppThemeMode) {
+        _themeMode.value = mode
+        try {
+            val app = getApplication<Application>()
+            val prefs = app.getSharedPreferences("app_settings_theme", android.content.Context.MODE_PRIVATE)
+            prefs.edit().putString("theme_mode", mode.name).apply()
+        } catch (e: Exception) {
+            // Ignore
+        }
+    }
+
+    // Server Telemetry / Simulated Load
+    val simulatedLoad: StateFlow<Int> = MutableStateFlow(24).asStateFlow()
+    val accentWeightPercent: Int = 90
+    val cornerRadiusPx: Int = 6
+
     // Active Screen: 0 = Welcome/Instructions, 1 = Printer Server Dashboard, 2 = Web Share & Local Transfer, 3 = Login Screen, 4 = MPIN Unlock, 5 = MPIN Setup
     private val _currentScreen = MutableStateFlow(
         when {
-            firebaseAuthService.currentUser == null -> 3 // First time or logged out -> Show Login Page
-            securityAuthManager.isMpinSet() -> 4 // Logged in & MPIN set -> Quick Unlock with Fingerprint / MPIN
-            else -> 1 // Logged in & no MPIN -> Dashboard
+            securityAuthManager.isMpinSet() -> 4 // MPIN set -> Quick Unlock with Fingerprint / MPIN
+            firebaseAuthService.currentUser != null -> 1 // Logged in -> Dashboard
+            else -> 3 // Mandatory authentication: start at Login Screen (Guest Mode removed)
         }
     )
     val currentScreen: StateFlow<Int> = _currentScreen.asStateFlow()
@@ -194,10 +230,6 @@ class PrinterViewModel(application: Application) : AndroidViewModel(application)
                             Toast.LENGTH_LONG
                         ).show()
                     }
-                }
-            } else if (_currentScreen.value != 3 && _currentScreen.value != 0) {
-                withContext(Dispatchers.Main) {
-                    _currentScreen.value = 3
                 }
             }
         }
@@ -339,10 +371,6 @@ class PrinterViewModel(application: Application) : AndroidViewModel(application)
                     proLicenseManager.startRealtimeUserSync(user.uid)
                     proLicenseManager.syncUserFromFirestore(user.uid)
                 }
-            } else if (_currentScreen.value != 3 && _currentScreen.value != 0) {
-                withContext(Dispatchers.Main) {
-                    _currentScreen.value = 3
-                }
             }
         }
 
@@ -419,6 +447,10 @@ class PrinterViewModel(application: Application) : AndroidViewModel(application)
     fun getRemainingConversions(): Int = proLicenseManager.getRemainingConversions()
 
     fun navigateToScreen(screenIndex: Int) {
+        if (!_isLoggedIn.value && screenIndex != 3 && screenIndex != 4 && screenIndex != 5) {
+            _currentScreen.value = 3
+            return
+        }
         _currentScreen.value = screenIndex
     }
 

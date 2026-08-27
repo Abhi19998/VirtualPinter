@@ -116,7 +116,8 @@ class MainActivity : FragmentActivity() {
         handleIntentExtras(intent)
 
         setContent {
-            MyApplicationTheme {
+            val themeMode by viewModel.themeMode.collectAsState()
+            MyApplicationTheme(themeMode = themeMode) {
                 MainContent(
                     viewModel = viewModel,
                     onRequestBiometric = { onSuccess, onError ->
@@ -342,9 +343,7 @@ fun MainContent(
                                     viewModel.navigateToScreen(5) // Setup MPIN
                                 }
                             },
-                            onBack = if (isLoggedIn) {
-                                { viewModel.navigateToScreen(1) }
-                            } else null
+                            onBack = null
                         )
                     }
                     4 -> {
