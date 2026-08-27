@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Virtual PDF Printer</string>
+    <string name="google_app_id" translatable="false">1:319789767715:android:c4ff17c26c882e5b5ea596</string>
+    <string name="google_api_key" translatable="false">AIzaSyDiE9LERf_bAI4o_Tvv8Ib3DarI8FKO_qc</string>
+    <string name="google_storage_bucket" translatable="false">virtual-pdf-printer.firebasestorage.app</string>
+    <string name="project_id" translatable="false">virtual-pdf-printer</string>
+    <string name="gcm_defaultSenderId" translatable="false">319789767715</string>
 </resources>

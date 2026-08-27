@@ -17,7 +17,15 @@ class VirtualPrinterApp : Application() {
     override fun onCreate() {
         super.onCreate()
         try {
-            FirebaseApp.initializeApp(this)
+            if (FirebaseApp.getApps(this).isEmpty()) {
+                val options = com.google.firebase.FirebaseOptions.Builder()
+                    .setApplicationId("1:319789767715:android:c4ff17c26c882e5b5ea596")
+                    .setApiKey("AIzaSyDiE9LERf_bAI4o_Tvv8Ib3DarI8FKO_qc")
+                    .setProjectId("virtual-pdf-printer")
+                    .setStorageBucket("virtual-pdf-printer.firebasestorage.app")
+                    .build()
+                FirebaseApp.initializeApp(this, options)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
