@@ -20,6 +20,7 @@ import com.example.data.SharedFileItem
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.Locale
 
 object StorageHelper {
 
@@ -178,6 +179,16 @@ object StorageHelper {
      */
     fun getAllCandidateFolders(context: Context): List<File> {
         val list = mutableListOf<File>()
+
+        try {
+            val customPosix = File(getPosixFolderDir(context))
+            if (customPosix.exists()) {
+                list.add(customPosix)
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
+
         val root = Environment.getExternalStorageDirectory()
         list.add(File(root, VIRTUAL_PRINTER_FOLDER_NAME))
         list.add(File(root, VIRTUAL_PRINTER_LEGACY_FOLDER_NAME))
@@ -348,7 +359,24 @@ object StorageHelper {
     ): PrintJobEntity {
         val cleanName = sanitizeOriginalFileName(originalFileName, "UploadedDoc")
         val mimeType = getMimeType(cleanName)
-        val ext = cleanName.substringAfterLast('.', "dat").uppercase()
+        val extLower = cleanName.substringAfterLast('.', "").lowercase(Locale.ROOT)
+        val extUpper = extLower.uppercase(Locale.ROOT)
+        val formatName = when (extLower) {
+            "pdf" -> "PDF Document"
+            "ps", "eps" -> "PostScript Document"
+            "psd" -> "PSD Document"
+            "prn", "pcl", "raw" -> "RAW Print Stream"
+            "png", "jpg", "jpeg", "webp", "gif", "svg", "bmp" -> if (extUpper.isNotEmpty()) "Image ($extUpper)" else "Image"
+            "doc", "docx" -> "Word Document"
+            "xls", "xlsx" -> "Excel Spreadsheet"
+            "ppt", "pptx" -> "PowerPoint Presentation"
+            "txt", "md", "csv", "json", "xml", "log" -> if (extUpper.isNotEmpty()) "Text File ($extUpper)" else "Text File"
+            "zip", "rar", "tar", "gz", "7z" -> if (extUpper.isNotEmpty()) "Archive ($extUpper)" else "Archive"
+            "mp4", "mkv", "avi", "mov", "webm" -> if (extUpper.isNotEmpty()) "Video ($extUpper)" else "Video"
+            "mp3", "wav", "m4a", "aac", "flac", "ogg" -> if (extUpper.isNotEmpty()) "Audio ($extUpper)" else "Audio"
+            "apk", "aab" -> "Android Package"
+            else -> if (extUpper.isNotEmpty()) "$extUpper File" else "Document"
+        }
 
         var savedPath = "$DEFAULT_VIRTUAL_PRINTER_DIR/$cleanName"
         var contentUriStr: String? = null
@@ -371,6 +399,18 @@ object StorageHelper {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+
+            // Also save directly to the physical folder if POSIX path is writable
+            try {
+                val posixDir = File(getPosixFolderDir(context))
+                if (posixDir.exists() && posixDir.canWrite()) {
+                    val directFile = File(posixDir, cleanName)
+                    FileOutputStream(directFile).use { it.write(fileBytes) }
+                    savedPath = directFile.absolutePath
+                }
+            } catch (e: Exception) {
+                // Ignore POSIX fallback error
             }
         } else {
             // 1. Save directly to default /storage/emulated/0/VirtualPrinter
@@ -426,15 +466,15 @@ object StorageHelper {
 
         val entity = PrintJobEntity(
             fileName = cleanName,
-            originalFormat = "$ext File",
+            originalFormat = formatName,
             fileSizeBytes = fileBytes.size.toLong(),
             filePath = if (customUri != null) (contentUriStr ?: savedPath) else savedPath,
-            savedLocation = if (customUri != null) savedPath else savedPath,
-            contentUri = if (customUri != null) contentUriStr else (fileProviderUri?.toString() ?: contentUriStr),
+            savedLocation = if (customUri != null) "$displayFolder$cleanName" else savedPath,
+            contentUri = if (customUri != null) (contentUriStr ?: fileProviderUri?.toString()) else (fileProviderUri?.toString() ?: contentUriStr),
             receivedTimestamp = System.currentTimeMillis(),
             clientIp = clientIp,
             pageCount = 1,
-            status = "Original Format Preserved"
+            status = "Saved to $displayFolder"
         )
 
         unmarkFileCleared(context, entity.fileName)
@@ -826,6 +866,12 @@ object StorageHelper {
     }
 
     fun findMatchingPdfFile(context: Context, psFileName: String, psFilePath: String? = null): File? {
+        val ext = psFileName.substringAfterLast('.', "").lowercase(Locale.ROOT)
+        // Only look for converted PDFs if the source file is actually a PostScript / printer spool format
+        if (ext !in listOf("ps", "eps", "prn", "pjl", "pcl", "psd")) {
+            return null
+        }
+
         val baseName = psFileName.substringBeforeLast('.')
         val cleanBaseName = if (baseName.endsWith(".ps", ignoreCase = true)) baseName.substringBeforeLast('.') else baseName
 
@@ -895,9 +941,18 @@ object StorageHelper {
             val allInfoList = if (resInfoList.isEmpty()) pm.queryIntentActivities(intent, 0) else resInfoList
 
             if (allInfoList.isEmpty()) {
+                val appTypeDesc = when {
+                    isPdf -> "PDF viewer app (e.g. Adobe Acrobat, Google PDF Viewer)"
+                    mimeType.startsWith("image/") -> "image viewer app"
+                    mimeType.startsWith("video/") -> "video player app"
+                    mimeType.startsWith("audio/") -> "audio player app"
+                    mimeType.contains("sheet") || mimeType.contains("excel") || file.name.endsWith(".xlsx", true) || file.name.endsWith(".xls", true) -> "spreadsheet app (e.g. Microsoft Excel, Google Sheets)"
+                    mimeType.contains("word") || file.name.endsWith(".docx", true) || file.name.endsWith(".doc", true) -> "document viewer (e.g. Microsoft Word, Google Docs)"
+                    else -> "app compatible with .${file.name.substringAfterLast('.', "")}"
+                }
                 Toast.makeText(
                     context,
-                    "No external PDF viewer app installed (e.g. Adobe Acrobat, Google PDF Viewer).",
+                    "No $appTypeDesc installed to open '${file.name}'.",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -940,7 +995,6 @@ object StorageHelper {
     fun openFile(context: Context, job: PrintJobEntity) {
         try {
             val isPs = job.fileName.endsWith(".ps", ignoreCase = true) || job.fileName.endsWith(".eps", ignoreCase = true)
-            val isPdf = job.fileName.endsWith(".pdf", ignoreCase = true)
 
             if (isPs) {
                 // For PostScript, search for the converted PDF
@@ -959,26 +1013,22 @@ object StorageHelper {
                 }
             }
 
-            if (isPdf) {
-                val directFile = File(DEFAULT_VIRTUAL_PRINTER_DIR, job.fileName)
-                val internalFile = File(context.filesDir, job.fileName)
-                val externalFile = File(job.filePath)
-
-                val fileToOpen = when {
-                    directFile.exists() && directFile.length() > 0 -> directFile
-                    internalFile.exists() && internalFile.length() > 0 -> internalFile
-                    externalFile.exists() && externalFile.length() > 0 -> externalFile
-                    else -> null
-                }
-
-                if (fileToOpen != null) {
-                    openDirectFile(context, fileToOpen, "Open '${fileToOpen.name}' with...")
-                    return
-                }
-            }
-
+            // Generic file handling for all file types (PDF, XLSX, DOCX, Images, ZIP, Audio, Video, etc.)
+            val directFile = File(DEFAULT_VIRTUAL_PRINTER_DIR, job.fileName)
             val internalFile = File(context.filesDir, job.fileName)
             val externalFile = File(job.filePath)
+
+            val fileToOpen = when {
+                directFile.exists() && directFile.length() > 0 -> directFile
+                internalFile.exists() && internalFile.length() > 0 -> internalFile
+                externalFile.exists() && externalFile.length() > 0 -> externalFile
+                else -> null
+            }
+
+            if (fileToOpen != null) {
+                openDirectFile(context, fileToOpen, "Open '${fileToOpen.name}' with...")
+                return
+            }
 
             val fileToServe = when {
                 internalFile.exists() && internalFile.length() > 0 -> internalFile
@@ -1007,12 +1057,12 @@ object StorageHelper {
                     context.startActivity(chooser)
                 }
             } else {
-                Toast.makeText(context, "File not found on disk", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "File '${job.fileName}' not found on disk", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             Toast.makeText(
                 context,
-                "Unable to open file: ${e.message}",
+                "Unable to open file '${job.fileName}': ${e.message}",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -1131,9 +1181,7 @@ object StorageHelper {
 
                     if (!name.isNullOrBlank() && !name.startsWith(".") && mime != DocumentsContract.Document.MIME_TYPE_DIR) {
                         val ext = name.substringAfterLast('.', "").lowercase(java.util.Locale.ROOT)
-                        if (ext != "ps" && ext != "pdf") {
-                            continue
-                        }
+                        val extUpper = ext.uppercase(java.util.Locale.ROOT)
 
                         val childDocUri = if (docId != null) {
                             DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
@@ -1157,8 +1205,19 @@ object StorageHelper {
 
                         val format = when (ext) {
                             "pdf" -> "PDF Document"
-                            "ps" -> "PostScript Document"
-                            else -> "Document"
+                            "ps", "eps" -> "PostScript Document"
+                            "psd" -> "PSD Document"
+                            "prn", "pcl", "raw" -> "RAW Print Stream"
+                            "png", "jpg", "jpeg", "webp", "gif", "svg", "bmp" -> if (extUpper.isNotEmpty()) "Image ($extUpper)" else "Image"
+                            "doc", "docx" -> "Word Document"
+                            "xls", "xlsx" -> "Excel Spreadsheet"
+                            "ppt", "pptx" -> "PowerPoint Presentation"
+                            "txt", "md", "csv", "json", "xml", "log" -> if (extUpper.isNotEmpty()) "Text File ($extUpper)" else "Text File"
+                            "zip", "rar", "tar", "gz", "7z" -> if (extUpper.isNotEmpty()) "Archive ($extUpper)" else "Archive"
+                            "mp4", "mkv", "avi", "mov", "webm" -> if (extUpper.isNotEmpty()) "Video ($extUpper)" else "Video"
+                            "mp3", "wav", "m4a", "aac", "flac", "ogg" -> if (extUpper.isNotEmpty()) "Audio ($extUpper)" else "Audio"
+                            "apk", "aab" -> "Android Package"
+                            else -> if (extUpper.isNotEmpty()) "$extUpper File" else "Document"
                         }
 
                         val displayFolder = getSelectedFolderPathDisplay(context)
@@ -1478,9 +1537,7 @@ object StorageHelper {
                         if (folder.exists() && folder.isDirectory) {
                             folder.listFiles()?.forEach { file ->
                                 val nameLower = file.name.lowercase(java.util.Locale.ROOT)
-                                val ext = nameLower.substringAfterLast('.', "")
                                 if (file.isFile && file.length() > 0 &&
-                                    (ext == "ps" || ext == "pdf") &&
                                     !nameLower.startsWith(".") &&
                                     !nameLower.endsWith(".tmp") &&
                                     !nameLower.endsWith(".bin")
@@ -1522,13 +1579,25 @@ object StorageHelper {
                     continue
                 }
 
-                val ext = file.name.substringAfterLast('.', "").lowercase(java.util.Locale.ROOT)
-                val format = when (ext) {
+                val extLower = file.name.substringAfterLast('.', "").lowercase(java.util.Locale.ROOT)
+                val extUpper = extLower.uppercase(java.util.Locale.ROOT)
+                val format = when (extLower) {
                     "pdf" -> "PDF Document"
-                    "ps" -> "PostScript Document"
-                    else -> "Document"
+                    "ps", "eps" -> "PostScript Document"
+                    "psd" -> "PSD Document"
+                    "prn", "pcl", "raw" -> "RAW Print Stream"
+                    "png", "jpg", "jpeg", "webp", "gif", "svg", "bmp" -> if (extUpper.isNotEmpty()) "Image ($extUpper)" else "Image"
+                    "doc", "docx" -> "Word Document"
+                    "xls", "xlsx" -> "Excel Spreadsheet"
+                    "ppt", "pptx" -> "PowerPoint Presentation"
+                    "txt", "md", "csv", "json", "xml", "log" -> if (extUpper.isNotEmpty()) "Text File ($extUpper)" else "Text File"
+                    "zip", "rar", "tar", "gz", "7z" -> if (extUpper.isNotEmpty()) "Archive ($extUpper)" else "Archive"
+                    "mp4", "mkv", "avi", "mov", "webm" -> if (extUpper.isNotEmpty()) "Video ($extUpper)" else "Video"
+                    "mp3", "wav", "m4a", "aac", "flac", "ogg" -> if (extUpper.isNotEmpty()) "Audio ($extUpper)" else "Audio"
+                    "apk", "aab" -> "Android Package"
+                    else -> if (extUpper.isNotEmpty()) "$extUpper File" else "Document"
                 }
-                val status = when (ext) {
+                val status = when (extLower) {
                     "pdf" -> "PDF Document Ready"
                     "ps" -> "PostScript Document"
                     else -> "Saved in Virtual Printer"
@@ -1563,26 +1632,21 @@ object StorageHelper {
                 addedCount++
             }
 
-            // Prune jobs: keep only .ps and .pdf files and remove any physically missing files
+            // Prune jobs: remove physically deleted files
             val currentJobs = db.printJobDao().getAllJobsList()
             val customActiveUri = getSelectedFolderUri(context)
             val currentDisplayFolder = getSelectedFolderPathDisplay(context)
+            val posixDir = getPosixFolderDir(context)
             
             for (job in currentJobs) {
-                val ext = job.fileName.substringAfterLast('.', "").lowercase(java.util.Locale.ROOT)
-                if (ext != "ps" && ext != "pdf") {
-                    db.printJobDao().deleteJob(job)
-                    continue
-                }
-                
                 // Enforce current active folder isolation
                 if (customActiveUri != null) {
-                    if (!job.savedLocation.startsWith(currentDisplayFolder)) {
+                    if (!job.savedLocation.startsWith(currentDisplayFolder) && !job.savedLocation.startsWith(posixDir)) {
                         db.printJobDao().deleteJob(job)
                         continue
                     }
                 } else {
-                    if (!job.savedLocation.startsWith("/") && !job.savedLocation.startsWith("Virtual Printer")) {
+                    if (!job.savedLocation.startsWith("/") && !job.savedLocation.startsWith("Virtual Printer") && !job.savedLocation.startsWith("VirtualPrinter")) {
                         db.printJobDao().deleteJob(job)
                         continue
                     }

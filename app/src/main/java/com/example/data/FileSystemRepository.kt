@@ -58,8 +58,8 @@ class FileSystemRepository private constructor(private val context: Context) {
         .map { list ->
             list.filter { job ->
                 val name = job.fileName.lowercase(java.util.Locale.ROOT)
-                (name.endsWith(".ps") || name.endsWith(".pdf")) &&
-                !name.startsWith(".")
+                !name.startsWith(".") &&
+                !name.endsWith(".tmp")
             }.sortedByDescending { it.receivedTimestamp }
         }
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
@@ -196,8 +196,9 @@ class FileSystemRepository private constructor(private val context: Context) {
                     folder.listFiles()?.forEach { file ->
                         val name = file.name.lowercase(java.util.Locale.ROOT)
                         if (file.isFile && file.length() > 0 &&
-                            (name.endsWith(".ps") || name.endsWith(".pdf")) &&
-                            !name.startsWith(".")
+                            !name.startsWith(".") &&
+                            !name.endsWith(".tmp") &&
+                            !name.endsWith(".bin")
                         ) {
                             if (result.none { it.name.equals(file.name, ignoreCase = true) }) {
                                 result.add(file)

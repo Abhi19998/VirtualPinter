@@ -55,6 +55,7 @@ fun WebShareScreen(
     val isServerRunning by viewModel.isServerRunning.collectAsState()
     val sharedFilesForPc by viewModel.sharedFilesForPc.collectAsState()
     val allJobs by viewModel.printJobs.collectAsState()
+    val selectedFolderPath by viewModel.selectedFolderPath.collectAsState()
     var jobToDelete by remember { mutableStateOf<PrintJobEntity?>(null) }
 
     val webUrl = "http://${networkInfo.ipAddress}:8080"
@@ -207,7 +208,8 @@ fun WebShareScreen(
             // 3. RECEIVED FILES FROM PC (Original format preserved)
             item {
                 ReceivedFromPcHeaderCard(
-                    receivedCount = allJobs.size
+                    receivedCount = allJobs.size,
+                    folderPath = selectedFolderPath
                 )
             }
 
@@ -219,8 +221,8 @@ fun WebShareScreen(
                 items(allJobs.take(10), key = { it.id }) { job ->
                     ReceivedFileItemCard(
                         job = job,
-                        onOpen = { viewModel.openPdf(job) },
-                        onShare = { viewModel.sharePdf(job) },
+                        onOpen = { viewModel.openFile(job) },
+                        onShare = { viewModel.shareFile(job) },
                         onDelete = { jobToDelete = job }
                     )
                 }
@@ -714,7 +716,7 @@ fun SharedFileItemCard(
 }
 
 @Composable
-fun ReceivedFromPcHeaderCard(receivedCount: Int) {
+fun ReceivedFromPcHeaderCard(receivedCount: Int, folderPath: String = "Virtual Printer/") {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -755,7 +757,7 @@ fun ReceivedFromPcHeaderCard(receivedCount: Int) {
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Saved in VirtualPrinter/",
+                        text = "Saved in $folderPath",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

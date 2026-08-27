@@ -349,17 +349,26 @@ class PrinterViewModel(application: Application) : AndroidViewModel(application)
         // When a new print job or file is received in real-time:
         viewModelScope.launch {
             NetworkPrinterServer.lastJobReceived.collect { savedJob ->
-                val matchingPdf = StorageHelper.findMatchingPdfFile(getApplication(), savedJob.fileName, savedJob.filePath)
-                if (matchingPdf != null && matchingPdf.exists() && matchingPdf.length() > 0) {
+                val fileName = savedJob.fileName
+                val isPs = fileName.endsWith(".ps", ignoreCase = true) || fileName.endsWith(".eps", ignoreCase = true)
+                val isPdf = fileName.endsWith(".pdf", ignoreCase = true)
+
+                if (isPs) {
+                    val matchingPdf = StorageHelper.findMatchingPdfFile(getApplication(), savedJob.fileName, savedJob.filePath)
+                    if (matchingPdf != null && matchingPdf.exists() && matchingPdf.length() > 0) {
+                        _previewDocument.value = null
+                        StorageHelper.openDirectFile(getApplication(), matchingPdf, "Open '${matchingPdf.name}' with...")
+                    } else {
+                        _previewDocument.value = PreviewDocumentSource.Saved(savedJob)
+                    }
+                } else if (isPdf) {
                     _previewDocument.value = null
-                    StorageHelper.openDirectFile(getApplication(), matchingPdf, "Open '${matchingPdf.name}' with...")
-                } else if (savedJob.fileName.endsWith(".ps", ignoreCase = true) || savedJob.fileName.endsWith(".eps", ignoreCase = true)) {
-                    _previewDocument.value = PreviewDocumentSource.Saved(savedJob)
-                } else if (savedJob.fileName.endsWith(".pdf", ignoreCase = true)) {
-                    _previewDocument.value = null
-                    openPdf(savedJob)
+                    openFile(savedJob)
                 } else {
-                    _previewDocument.value = PreviewDocumentSource.Saved(savedJob)
+                    // For Web Share / Local Transfer of ANY generic file (Excel, Word, Images, Audio, Video, ZIP, APK, etc.)
+                    // Automatically open with its matching app on phone without forcing PDF preview
+                    _previewDocument.value = null
+                    openFile(savedJob)
                 }
                 if (_currentScreen.value == 0) {
                     _currentScreen.value = 1
@@ -431,9 +440,16 @@ class PrinterViewModel(application: Application) : AndroidViewModel(application)
             return
         }
 
-        if (fileName.endsWith(".pdf", ignoreCase = true)) {
+        val isPs = fileName.endsWith(".ps", ignoreCase = true) || fileName.endsWith(".eps", ignoreCase = true)
+        if (isPs) {
+            _previewDocument.value = source
+        } else {
+            // For all generic files (PDF, XLSX, DOCX, Images, ZIP, Audio, etc.)
             when (source) {
-                is PreviewDocumentSource.Saved -> openPdf(source.job)
+                is PreviewDocumentSource.Saved -> {
+                    _previewDocument.value = null
+                    openFile(source.job)
+                }
                 is PreviewDocumentSource.Pending -> {
                     viewModelScope.launch(Dispatchers.IO) {
                         val entity = NetworkPrinterServer.savePendingJob(
@@ -441,12 +457,11 @@ class PrinterViewModel(application: Application) : AndroidViewModel(application)
                             pendingJob = source.pendingJob,
                             customName = source.pendingJob.defaultName
                         )
-                        openPdf(entity)
+                        _previewDocument.value = null
+                        openFile(entity)
                     }
                 }
             }
-        } else {
-            _previewDocument.value = source
         }
     }
 
@@ -680,12 +695,20 @@ class PrinterViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun openPdf(job: PrintJobEntity) {
+    fun openFile(job: PrintJobEntity) {
         StorageHelper.openFile(getApplication(), job)
     }
 
-    fun sharePdf(job: PrintJobEntity) {
+    fun shareFile(job: PrintJobEntity) {
         StorageHelper.shareFile(getApplication(), job)
+    }
+
+    fun openPdf(job: PrintJobEntity) {
+        openFile(job)
+    }
+
+    fun sharePdf(job: PrintJobEntity) {
+        shareFile(job)
     }
 
     fun openFileLocation(job: PrintJobEntity) {

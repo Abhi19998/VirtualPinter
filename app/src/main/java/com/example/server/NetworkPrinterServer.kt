@@ -432,10 +432,12 @@ object NetworkPrinterServer {
                     )
                     _lastJobReceived.tryEmit(savedEntity)
 
+                    val destFolder = StorageHelper.getSelectedFolderPathDisplay(context)
+
                     Handler(Looper.getMainLooper()).post {
                         Toast.makeText(
                             context,
-                            "📥 Received '${savedEntity.fileName}' in original format from PC!",
+                            "📥 Received '${savedEntity.fileName}' in original format, saved to $destFolder",
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -464,7 +466,7 @@ object NetworkPrinterServer {
                                 <div class="icon">✅</div>
                                 <h2>File Uploaded to Phone!</h2>
                                 <div class="file-tag">${savedEntity.fileName} ($sizeFormatted)</div>
-                                <p>Saved in <b>original format</b> directly to your phone's <code>VirtualPrinter</code> folder.</p>
+                                <p>Saved in <b>original format</b> directly to your phone's <code>$destFolder</code> folder.</p>
                                 <a href="/" class="btn">Back to Web Hub</a>
                                 <script>setTimeout(() => { window.location.href = '/'; }, 3000);</script>
                             </div>
@@ -491,6 +493,7 @@ object NetworkPrinterServer {
         val sharedList = _sharedFilesForPc.value
         val db = AppDatabase.getDatabase(context)
         val allSavedJobs = db.printJobDao().getAllJobs().firstOrNull() ?: emptyList()
+        val currentDestFolder = StorageHelper.getSelectedFolderPathDisplay(context)
 
         val sharedRowsHtml = if (sharedList.isEmpty()) {
             """<tr><td colspan="4" style="text-align:center;padding:30px;color:#94a3b8;">
@@ -635,7 +638,7 @@ object NetworkPrinterServer {
                             
                             <div class="format-note">
                                 <span>⚡</span>
-                                <span><b>Original format preserved:</b> Uploaded files are saved directly in their authentic format to the phone's <code>VirtualPrinter</code> folder without conversion.</span>
+                                <span><b>Original format preserved:</b> Uploaded files are saved directly in their authentic format to the phone's <code>$currentDestFolder</code> folder without conversion.</span>
                             </div>
                             
                             <button type="submit" class="btn-submit" id="submitBtn">🚀 Send File to Android Phone</button>
@@ -669,8 +672,8 @@ object NetworkPrinterServer {
                     <!-- 3. Stored Files on Phone -->
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">📱 Stored Documents & Print Jobs</div>
-                            <span style="font-size:12px;color:#94a3b8">VirtualPrinter</span>
+                            <div class="card-title">📱 Stored Documents & Received Files</div>
+                            <span style="font-size:12px;color:#94a3b8">$currentDestFolder</span>
                         </div>
                         
                         <div style="overflow-x:auto">

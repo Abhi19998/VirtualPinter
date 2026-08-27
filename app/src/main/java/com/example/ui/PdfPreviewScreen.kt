@@ -522,21 +522,25 @@ fun PdfPreviewScreen(
                             }
 
                             if (onOpenExternal != null) {
+                                val isPdf = fileExtension == "pdf"
+                                val openLabel = if (isPdf) "Open PDF" else "Open File"
+                                val openIcon = if (isPdf) Icons.Default.PictureAsPdf else Icons.Default.OpenInNew
+                                val buttonColor = if (isPdf) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary
                                 Button(
                                     onClick = onOpenExternal,
                                     modifier = Modifier.weight(1.2f),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFDC2626)
+                                        containerColor = buttonColor
                                     )
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.PictureAsPdf,
+                                        imageVector = openIcon,
                                         contentDescription = null,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Open PDF", maxLines = 1)
+                                    Text(openLabel, maxLines = 1)
                                 }
                             }
                         }
