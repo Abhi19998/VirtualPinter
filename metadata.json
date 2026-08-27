@@ -1,0 +1,6 @@
+{
+  "name": "Virtual PDF Printer",
+  "description": "A virtual network printer that receives print jobs and manages documents in your dedicated VirtualPrinter folder.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

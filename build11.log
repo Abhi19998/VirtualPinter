@@ -1,0 +1,131 @@
+Reusing configuration cache.
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+Exception in thread "AWT-EventQueue-0" java.lang.NullPointerException: Cannot invoke "ksp.com.intellij.openapi.application.Application.getService(java.lang.Class)" because the return value of "ksp.com.intellij.openapi.application.ApplicationManager.getApplication()" is null
+	at ksp.com.intellij.openapi.fileEditor.FileDocumentManager.getInstance(FileDocumentManager.java:35)
+	at ksp.com.intellij.openapi.fileTypes.BinaryFileTypeDecompilers.lambda$notifyDecompilerSetChange$1(BinaryFileTypeDecompilers.java:29)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:400)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+> Task :app:kspDebugKotlin
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:886:5 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:5 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:8 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:9 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:18 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:20 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:28 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:29 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:41 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:42 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:43 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:44 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:51 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:52 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:63 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:65 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:66 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:67 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:69 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:71 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:80 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:82 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:83 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:84 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:86 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:87 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:89 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:89 Functions which invoke @Composable functions must be marked with the @Composable annotation
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:888:89 Function declaration must have a name.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:889:9 @Composable invocations can only happen from the context of a @Composable function
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:892:38 Unresolved reference 'job'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:893:18 This foundation API is experimental and is likely to change or be removed in the future.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:894:33 Unresolved reference 'onPreview'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:895:37 Unresolved reference 'showMenu'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:898:35 @Composable invocations can only happen from the context of a @Composable function
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:898:77 @Composable invocations can only happen from the context of a @Composable function
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:899:38 @Composable invocations can only happen from the context of a @Composable function
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:912:37 Unresolved reference 'badgeBg'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:916:39 Unresolved reference 'formatIcon'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:917:50 Unresolved reference 'hasPdf'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:918:32 Unresolved reference 'badgeFg'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:927:32 Unresolved reference 'job'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:936:34 Unresolved reference 'dateFormatted'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:936:51 Unresolved reference 'formattedSize'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:942:40 Unresolved reference 'showMenu'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:952:9 @Composable invocations can only happen from the context of a @Composable function
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:953:24 Unresolved reference 'showMenu'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:954:34 Unresolved reference 'showMenu'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:955:58 @Composable invocations can only happen from the context of a @Composable function
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:959:29 Unresolved reference 'showMenu'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:959:47 Unresolved reference 'onPreview'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:960:38 Unresolved reference 'actionIcon'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:964:29 Unresolved reference 'showMenu'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:964:47 Unresolved reference 'onRename'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:969:29 Unresolved reference 'showMenu'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:969:47 Unresolved reference 'onShare'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:974:29 Unresolved reference 'showMenu'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:974:47 Unresolved reference 'onDelete'.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:979:1 Syntax error: Expecting a top level declaration.
+e: file:///app/applet/app/src/main/java/com/example/ui/PrinterDashboardScreen.kt:1614:6 Syntax error: Expecting '}'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 17s
+32 actionable tasks: 2 executed, 30 up-to-date
+Configuration cache entry reused.
